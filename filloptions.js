@@ -64,13 +64,13 @@ function createOptionDiv(text)
 						size = $('#sizeSelected')[0].value;
 						color = $('#colorSelected')[0].value;
 						//$.cookie(itemId, JSON.stringify({'size': size, 'color': color, 'dbst': dbst, 'nowT': nowT, 'wurl': wurl}));
-						$.cookie(itemId, JSON.stringify({'size': size, 'color': color}));
+						$.cookie(itemId, JSON.stringify({'size': size, 'color': color}), {domain: 'taobao.com', path: '/'});
 					}
 					else if($('#sizeSelected')[0].value && $('#colorSelected')[0].value)
 					{
 						size = $('#sizeSelected')[0].value;
 						color = $('#colorSelected')[0].value;
-						$.cookie(itemId, JSON.stringify({'size': size, 'color': color}));
+						$.cookie(itemId, JSON.stringify({'size': size, 'color': color}), {domain: 'taobao.com', path: '/'});
 					}
 					$('#opInfo').html('保存成功,可以点击开始啦');
 				}
@@ -81,23 +81,7 @@ function createOptionDiv(text)
 		}
 	}
 }
-function addSaveBtnToLogin()
-{
-	$('#btn-passwd').remove();
-	$('<button id="btn-passwd" class="btn-extension" style="float:right;">读取并保存密码</button>').
-		insertAfter($('#logo').css({float: "left"})).click(function(){
-			if(document.getElementById('J_PwdV') && document.getElementById('J_PwdV').value)
-			{
-				//$.cookie('tbpasswd', document.getElementById('J_PwdV').value);
-				$('#btn-passwd').html('密码保存成功');
-			}
-			else
-			{
-				$('#btn-passwd').html('没能获取密码');
-			}
-		}
-	);
-}
+
 function addSelectOption(selectNode, options)
 {
 	if(selectNode)
@@ -142,7 +126,6 @@ if(bopen)
 }
 else
 {
-	debugger;
 	if(location.href.indexOf('http://item.taobao.com/') != -1)
 	{
 		fetchDetailskip(location.href, createOptionDiv);

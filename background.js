@@ -51,11 +51,32 @@ chrome.runtime.onMessage.addListener(
 	        else if (message.type == 'openLoginTab')
         	{
 	        	console.log('getTabId   ' + sender.tab.id + ": " + sender.tab.url);
+	        	chrome.tabs.getAllInWindow(null, function(tabs){
+	        		tabs.forEach(function(tab){
+	        			if(tab.url.indexOf('https://login.taobao.com/member/login.jhtml') !== -1)
+        				{
+	        				chrome.tabs.remove(tab.id, function(){
+	        					console.log('tab: ' + tab.id + 'closed');
+	        				});
+        				}
+	        		});
+	        	});
 	        	chrome.tabs.create({
 	        		url: 'https://login.taobao.com/member/login.jhtml',
 	        		selected: message.selected || false
 	        	});
 	        	sendResponse({ tabId: sender.tab.id });
+        	}
+	        else if(message.type == 'getTabSelected')
+        	{
+	        	chrome.tabs.update(sender.tab.id, {selected: true});
+	        	sendResponse({ tabId: sender.tab.id });
+        	}
+	        else if(message.type == 'getTabClosed')
+        	{
+	        	setTimeout(function(){
+	        		chrome.tabs.remove(sender.tab.id);
+	        	}, 2000);
         	}
 		}      
 );

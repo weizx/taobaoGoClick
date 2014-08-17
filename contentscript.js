@@ -1,4 +1,4 @@
-var tabId, args, pageData, bopen = false, seconds = 0, loginSelected = true;
+var tabId, args, pageData, bopen = false, seconds = 0, loginSelected = true, pageState = 0;
 var saveAs = saveAs
 || (navigator.msSaveOrOpenBlob && navigator.msSaveOrOpenBlob.bind(navigator))
 || (function(view) {
@@ -231,6 +231,9 @@ function clickOrderSubmitA()
 	var $orderSubmitNode = $('#J_Go');
 	if($orderSubmitNode.size()>0)
 	{
+		var itemid = $.cookie(tabId + '_id');
+		$.cookie(itemid, null, {domain: 'taobao.com', path: '/'});
+		$.cookie(tabId + "_id", null, {domain: 'taobao.com', path: '/'});
 		$orderSubmitNode[0].click();
 	}
 }
@@ -249,6 +252,9 @@ function checkIfNeedVerify()
 			"width": '600px',
 			"color": 'red'
 		});
+		var itemid = $.cookie(tabId + '_id');
+		$.cookie(itemid, null, {domain: 'taobao.com', path: '/'});
+		$.cookie(tabId + "_id", null, {domain: 'taobao.com', path: '/'});
 		adressAlready(function(){$('#J_verifyImageMask>a')[0].click();});
 		//$maskNode.find('>a:first-child').click();
 		return true;
@@ -326,7 +332,16 @@ function onText(data)
 		if(dynamicStock && dynamicStock.sku && dynamicStock.sku[';' + options.size + ';' + options.color + ';'] && 
 				Number(dynamicStock.sku[';' + options.size + ';' + options.color + ';'].stock) > 0 )
 		{
-			location.reload();
+			if($('#J_juValid .tb-btn-buy>a').hasClass('tb-disabled'))
+			{
+				setTimeout(function(){
+					location.reload();
+				}, 1500);
+			}
+			else
+			{
+				location.reload();
+			}
 		}
 		else
 		{
@@ -380,94 +395,166 @@ function convertMilsecs(ms)
 			(parseInt(sec%(3600*24)%3600%60)<10 ? '0' + parseInt(sec%(3600*24)%3600%60) : parseInt(sec%(3600*24)%3600%60)) + 's';
 	}
 }
+function checkLoginStateOnce(data)
+{
+	data = "var " + data;
+	eval(data);
+	var state = gotoLogin(loginIndicator);
+	if((pageState == 1 && ((state == 0 && $.cookie('tbpasswd')) || state == 2)) || (pageState == 2 && state == 0 && $.cookie('tbpasswd')))
+	{
+		setTimeout(function(){
+			location.reload();
+		}, 200);
+	}
+	else if(pageState == 2 && state == 2)
+	{
+		var bSuccess = true;
+		var options = JSON.parse($.cookie(args.id));
+		var wurl = pageData.sku.wholeSibUrl, valLoginIndicator = pageData.sku.valLoginIndicator;
+		if(options.size && options.color)
+		{
+			if(bSuccess = clickSelectA(options.size))
+			{
+				if(bSuccess = clickSelectA(options.color))
+				{
+					bSuccess = clickBuyA();
+				}
+			}
+		}
+		if(!bSuccess)
+		{
+			setTimeout(function(){
+				fetchDetailskip(wurl, onText);
+			}, 5);
+			
+		}
+	}
+}
 function checkLoginState(data)
 {
 	data = "var " + data;
 	eval(data);
+	gotoLogin(loginIndicator);
+	setTimeout(function(){
+		console.log('check login state');
+		fetchDetailskip(pageData.sku.valLoginIndicator, checkLoginState);
+	}, 180000);
+}
+function gotoLogin(loginIndicator)
+{
 	if(loginIndicator && loginIndicator.hasPhantomLoggedIn && !loginIndicator.hasLoggedIn)
 	{
 		chrome.runtime.sendMessage({ type: 'openLoginTab', selected: loginSelected }, function(res) {
-		    
+			loginSelected = false;
+			console.log('open login page ' + loginSelected);
 		});
+		return 0;
 	}
 	else if(loginIndicator && !loginIndicator.hasPhantomLoggedIn && !loginIndicator.hasLoggedIn)
 	{
-		
+		chrome.runtime.sendMessage({ type: 'openLoginTab', selected: true }, function(res) {
+			loginSelected = false;
+		});
+		return 1
 	}
+	return 2;
+}
+function addSaveBtnToLogin()
+{
+	$('#tip-passwd').remove();
+	$('#btn-passwd').remove();
+	$('<div id="tip-passwd" style="float:left;color:red;font-size:16px;line-height:38px;margin-left:50px;">输入密码，并点击→_→按钮保存→→→→→→→</div>').
+		insertAfter($('#logo').css({float: "left"}));
+	$('<button id="btn-passwd" class="btn-extension" style="float:right;">读取并保存密码</button>').
+		insertAfter($('#tip-passwd')).click(function(){
+			if(document.getElementById('J_PwdV') && document.getElementById('J_PwdV').value)
+			{
+				$.cookie('tbpasswd', document.getElementById('J_PwdV').value, {domain: 'taobao.com', path: '/'});
+				$('#btn-passwd').html('密码保存成功');
+				$('#J_VerifySubmit')[0].click();
+			}
+			else
+			{
+				$('#btn-passwd').html('没能获取密码');
+			}
+		}
+	);
 }
 
 $(function(){
 	chrome.runtime.sendMessage({ type: 'getTabId' }, function(res) {
 	    tabId = res.tabId;
-	});
-	if(location.href.indexOf('http://item.taobao.com/') != -1)
-	{
-		//var port = chrome.extension.connect();
-		document.getElementById('myCustomEventDiv').addEventListener('myCustomEvent', function() {
-		  var eventData = document.getElementById('myCustomEventDiv').innerText;
-		  pageData = JSON.parse(eventData);
-		  //port.postMessage({message: "myCustomEvent", values: eventData});
-		  args=queryStrings();
-		  if(args.id)
-			{
-				if($.cookie(args.id))
-				{
-					var options = JSON.parse($.cookie(args.id));
-					var dbst = pageData.config.item.dbst, nowT = pageData.config.now,
-					wurl = pageData.sku.wholeSibUrl, valLoginIndicator = pageData.sku.valLoginIndicator;
-					dbst = dbst + 826449140;
-					if(dbst > nowT + 1200)
-					{
-						createCountDownTip();
-						setTimeout(function(){
-							location.reload();
-						}, dbst - nowT - 1200); //(dbst - nowT - 1200) > 180000 ? 180000 : (dbst - nowT - 1200)
-						
-						setInterval(function(){
-							$('#J_CountDown>span').html(convertMilsecs(dbst - nowT - seconds*1000));
-							seconds++;
-						}, 1000);
-						fetchDetailskip(valLoginIndicator, checkLoginState);
-					}
-					else if(dbst > nowT)
-					{
-						setTimeout(function(){
-							location.reload();
-						}, 100);
-					}
-					else
-					{
-						var bSuccess = true;
-						if(options.size && options.color)
-						{
-							if(bSuccess = clickSelectA(options.size))
-							{
-								if(bSuccess = clickSelectA(options.color))
-								{
-									bSuccess = clickBuyA();
-								}
-							}
-						}
-						
-						if(!bSuccess)
-						{
-							fetchDetailskip(wurl, onText);
-						}
-					}
-					
-				}
-			}
-		});
-		dynamicScript('chrome-extension://mhgnkbjdimciafmljeklonffdhaimeja/postMessage.js');
-		
-	}
-	else if(location.href.indexOf('http://buy.taobao.com/') != -1)
-	{
-		if(!checkIfNeedVerify())
+	    if(location.href.indexOf('http://item.taobao.com/') != -1)
 		{
-			setTimeout(function(){adressAlready(clickOrderSubmitA);}, 5);
+			//var port = chrome.extension.connect();
+			document.getElementById('myCustomEventDiv').addEventListener('myCustomEvent', function() {
+			  var eventData = document.getElementById('myCustomEventDiv').innerText;
+			  pageData = JSON.parse(eventData);
+			  //port.postMessage({message: "myCustomEvent", values: eventData});
+			  args=queryStrings();
+			  
+			  if(args.id)
+				{
+					if($.cookie(args.id) && $.cookie(args.id) !== 'null')
+					{
+						$.cookie(tabId + '_id', args.id, {domain: 'taobao.com', path: '/'});
+						var options = JSON.parse($.cookie(args.id));
+						var dbst = pageData.config.item.dbst, nowT = pageData.config.now,
+						wurl = pageData.sku.wholeSibUrl, valLoginIndicator = pageData.sku.valLoginIndicator;
+						//dbst = dbst + 826449140;
+						if(dbst > nowT + 1200)
+						{
+							pageState = 0;
+							createCountDownTip();
+							setTimeout(function(){
+								location.reload();
+							}, dbst - nowT - 1200); //(dbst - nowT - 1200) > 180000 ? 180000 : (dbst - nowT - 1200)
+							
+							setInterval(function(){
+								$('#J_CountDown>span').html(convertMilsecs(dbst - nowT - seconds*1000));
+								seconds++;
+							}, 1000);
+							fetchDetailskip(valLoginIndicator, checkLoginState);
+						}
+						else if(dbst > nowT)
+						{
+							pageState = 1;
+							fetchDetailskip(valLoginIndicator, checkLoginStateOnce);
+						}
+						else
+						{
+							pageState = 2;
+							fetchDetailskip(valLoginIndicator, checkLoginStateOnce);
+						}
+					}
+				}
+			});
+			dynamicScript('chrome-extension://mhgnkbjdimciafmljeklonffdhaimeja/postMessage.js');
+			
 		}
-	}
+		else if(location.href.indexOf('http://buy.taobao.com/') != -1)
+		{
+			if(!checkIfNeedVerify())
+			{
+				setTimeout(function(){adressAlready(clickOrderSubmitA);}, 5);
+			}
+		}
+		else if(location.href.indexOf('https://login.taobao.com/') != -1)
+		{
+			if($.cookie('tbpasswd'))
+			{
+				document.getElementById('J_PwdV').value = $.cookie('tbpasswd');
+				chrome.runtime.sendMessage({ type: 'getTabClosed' });
+				$('#J_VerifySubmit')[0].click();
+			}
+			else
+			{
+				chrome.runtime.sendMessage({ type: 'getTabSelected'}, function(res){
+					addSaveBtnToLogin();
+				});
+			}
+		}
+	});
 	
 });
 createEventDiv();

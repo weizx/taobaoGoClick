@@ -1,0 +1,40 @@
+{
+  "manifest_version": 2,
+  "name": "TaoBao Grab",
+  "version": "1.0.0",
+  "description": "淘宝抢单",
+  "permissions": [
+     "tabs",
+	 "cookies",
+    "http://*.taobao.com/*"
+  ],
+  "icons": {
+    "16" : "sandwich-16.png",
+    "48" : "sandwich-48.png",
+    "128" : "sandwich-128.png"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_title": "淘宝抢单",
+	"default_icon": "sandwich-16.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://item.taobao.com/*", "http://buy.taobao.com/*"],
+      "css": ["style.css"],
+      "js" : ["jquery-1.11.0.min.js","jquery.cookie.js","contentscript.js"],
+	  "run_at" : "document_end",
+      "all_frames" : false
+    }
+  ],
+  "web_accessible_resources": [
+	   "jquery.min.map",
+	   "bg_top.png",
+	   "bg_input_login.png",
+	   "checkbox.png",
+	   "postMessage.js"
+  ]
+}

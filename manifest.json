@@ -6,7 +6,8 @@
   "permissions": [
      "tabs",
 	 "cookies",
-    "http://*.taobao.com/*"
+    "http://*.taobao.com/*",
+    "https://*.taobao.com/*"
   ],
   "icons": {
     "16" : "sandwich-16.png",
@@ -23,7 +24,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://item.taobao.com/*", "http://buy.taobao.com/*"],
+      "matches": ["http://item.taobao.com/*", "http://buy.taobao.com/*", "https://login.taobao.com/*"],
       "css": ["style.css"],
       "js" : ["jquery-1.11.0.min.js","jquery.cookie.js","contentscript.js"],
 	  "run_at" : "document_end",

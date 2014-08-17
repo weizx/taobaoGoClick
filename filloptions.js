@@ -18,7 +18,7 @@ function createOptionDiv(text)
 		var $optionDiv = $('<div id="option_wrapper_outer"></div>').prependTo($('body'));
 		var $wrapper = $('<div id="option_wrapper"></div>').appendTo($optionDiv);
 		var $optionsNode = $('<ul><li><div style="width:290px;">' + 
-				'<p style="font-size:24px;line-height:36px;color:white;">请从网页中选择尺寸和颜色</p>' + 
+				'<p style="font-size:24px;line-height:36px;color:white;">请选择尺寸和颜色</p>' + 
 				'</div> </li>' +
 				/*'<li><div style="width:120px;">' +
 				'<label for="chk_input_index_switcher"><input type="checkbox" id="chk_input_index_switcher">' + 
@@ -81,6 +81,23 @@ function createOptionDiv(text)
 		}
 	}
 }
+function addSaveBtnToLogin()
+{
+	$('#btn-passwd').remove();
+	$('<button id="btn-passwd" class="btn-extension" style="float:right;">读取并保存密码</button>').
+		insertAfter($('#logo').css({float: "left"})).click(function(){
+			if(document.getElementById('J_PwdV') && document.getElementById('J_PwdV').value)
+			{
+				//$.cookie('tbpasswd', document.getElementById('J_PwdV').value);
+				$('#btn-passwd').html('密码保存成功');
+			}
+			else
+			{
+				$('#btn-passwd').html('没能获取密码');
+			}
+		}
+	);
+}
 function addSelectOption(selectNode, options)
 {
 	if(selectNode)
@@ -114,11 +131,26 @@ function slideToogleDiv()
 args=queryStrings();
 if(bopen)
 {
-	slideToogleDiv();
+	if(location.href.indexOf('http://item.taobao.com/') != -1)
+	{
+		slideToogleDiv();
+	}
+	else if(location.href.indexOf('https://login.taobao.com/') != -1)
+	{
+		addSaveBtnToLogin();
+	}
 }
 else
 {
-	fetchDetailskip(location.href, createOptionDiv);
+	debugger;
+	if(location.href.indexOf('http://item.taobao.com/') != -1)
+	{
+		fetchDetailskip(location.href, createOptionDiv);
+	}
+	else if(location.href.indexOf('https://login.taobao.com/') != -1)
+	{
+		addSaveBtnToLogin();
+	}
 }
 
 /*chrome.runtime.onMessage.addListener(

@@ -39,6 +39,7 @@ var new_sku = {
 		valItemId: src_sku.valItemId,
 		rstItemId: src_sku.rstItemId,
 		rstShopId: src_sku.rstShopId,
+		valLoginIndicator: src_sku.valLoginIndicator,
 		wholeSibUrl: src_sku.wholeSibUrl
 };
 fireCustomEvent(jsonify({'config': new_config, 'sku': new_sku}));

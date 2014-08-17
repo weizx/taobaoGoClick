@@ -31,16 +31,31 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 			 chrome.tabs.executeScript(null, {file:"filloptions.js"});
 		}
 	});*/
-	chrome.tabs.executeScript(null, {file:"filloptions.js"});
+	chrome.tabs.getSelected(null, function(tab){
+		if(tab.url.indexOf('http://item.taobao.com/') != -1 || tab.url.indexOf('https://login.taobao.com/') != -1)
+		{
+			chrome.tabs.executeScript(null, {file:"filloptions.js"});
+		}
+	});
+	
 });
 
 chrome.runtime.onMessage.addListener(
 		function(message, sender, sendResponse) {
 	        if ( message.type == 'getTabId' )
 	        {
-	        	console.log(sender.tab.id + ": " + sender.tab.url);
+	        	console.log("getTabId   " + sender.tab.id + ": " + sender.tab.url);
 	        	chrome.cookies.remove({url: sender.tab.url, name: sender.tab.id + '_toggle'});
 	            sendResponse({ tabId: sender.tab.id });
 	        }
+	        else if (message.type == 'openLoginTab')
+        	{
+	        	console.log('getTabId   ' + sender.tab.id + ": " + sender.tab.url);
+	        	chrome.tabs.create({
+	        		url: 'https://login.taobao.com/member/login.jhtml',
+	        		selected: message.selected || false
+	        	});
+	        	sendResponse({ tabId: sender.tab.id });
+        	}
 		}      
 );

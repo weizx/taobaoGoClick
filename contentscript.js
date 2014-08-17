@@ -1,4 +1,4 @@
-var tabId, args, pageData, bopen = false;
+var tabId, args, pageData, bopen = false, seconds = 0, loginSelected = true;
 var saveAs = saveAs
 || (navigator.msSaveOrOpenBlob && navigator.msSaveOrOpenBlob.bind(navigator))
 || (function(view) {
@@ -316,7 +316,10 @@ function onText(data)
 	        )
 	        , new Date().getTime() +  "_stock.txt"
 	    )*/
-	var dynamicStock = JSON.parse(data);
+	var g_config = {};
+	g_config.vdata = {};
+	eval(data);
+	var dynamicStock = g_config.DynamicStock
 	var options = JSON.parse($.cookie(args.id));
 	if(options.size && options.color)
 	{
@@ -329,7 +332,7 @@ function onText(data)
 		{
 			setTimeout(function(){
 				fetchDetailskip(pageData.sku.wholeSibUrl, onText);
-			}, 50);
+			}, 200);
 		}
 	}
 }
@@ -350,8 +353,47 @@ function dynamicScript(url, attrValues)
 
 function createCountDownTip()
 {
-	var countDownDiv = $('<div id="J_CountDown" class="tb-header-tip">距离开抢还有：<span></span></div>').insertAfter($('#J_Market'));
-	
+	$('<div id="J_CountDown" class="tb-header-tip">距离开抢还有：<span></span></div>').insertAfter($('#J_Market'));
+}
+function convertMilsecs(ms)
+{
+	var sec = parseInt(ms/1000);
+	if(sec < 60)
+	{
+		return sec + 's';
+	}
+	else if(sec < 3600)
+	{
+		return parseInt(sec/60) + 'm:' + ((sec%60)<10 ? '0' + (sec%60) : (sec%60)) + 's';
+	}
+	else if(sec < 3600*24)
+	{
+		return parseInt(sec/3600) + 'h:' + 
+			(parseInt(sec%3600/60)<10 ? '0' + parseInt(sec%3600/60) : parseInt(sec%3600/60)) + 'm:' + 
+			((sec%3600%60)<10 ? '0' + (sec%3600%60) : (sec%3600%60)) + 's' ;
+	}
+	else
+	{
+		return parseInt(sec/(3600*24)) + 'd ' +
+			parseInt(sec%(3600*24)/3600) + 'h:' +
+			(parseInt(sec%(3600*24)%3600/60)<10 ? '0' + parseInt(sec%(3600*24)%3600/60) : parseInt(sec%(3600*24)%3600/60)) + 'm:' + 
+			(parseInt(sec%(3600*24)%3600%60)<10 ? '0' + parseInt(sec%(3600*24)%3600%60) : parseInt(sec%(3600*24)%3600%60)) + 's';
+	}
+}
+function checkLoginState(data)
+{
+	data = "var " + data;
+	eval(data);
+	if(loginIndicator && loginIndicator.hasPhantomLoggedIn && !loginIndicator.hasLoggedIn)
+	{
+		chrome.runtime.sendMessage({ type: 'openLoginTab', selected: loginSelected }, function(res) {
+		    
+		});
+	}
+	else if(loginIndicator && !loginIndicator.hasPhantomLoggedIn && !loginIndicator.hasLoggedIn)
+	{
+		
+	}
 }
 
 $(function(){
@@ -372,14 +414,20 @@ $(function(){
 				{
 					var options = JSON.parse($.cookie(args.id));
 					var dbst = pageData.config.item.dbst, nowT = pageData.config.now,
-					wurl = pageData.sku.wholeSibUrl;
+					wurl = pageData.sku.wholeSibUrl, valLoginIndicator = pageData.sku.valLoginIndicator;
 					dbst = dbst + 826449140;
 					if(dbst > nowT + 1200)
 					{
 						createCountDownTip();
 						setTimeout(function(){
 							location.reload();
-						}, (dbst - nowT - 1200) > 180000 ? 180000 : (dbst - nowT - 1200));
+						}, dbst - nowT - 1200); //(dbst - nowT - 1200) > 180000 ? 180000 : (dbst - nowT - 1200)
+						
+						setInterval(function(){
+							$('#J_CountDown>span').html(convertMilsecs(dbst - nowT - seconds*1000));
+							seconds++;
+						}, 1000);
+						fetchDetailskip(valLoginIndicator, checkLoginState);
 					}
 					else if(dbst > nowT)
 					{
